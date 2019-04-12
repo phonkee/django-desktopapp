@@ -18,6 +18,16 @@ class ApplicationManager(models.Manager):
     Custom application manager
     """
 
+    def get_default(self) -> Optional[Application]:
+        """
+        default returns application with is_default set to true
+        :return:
+        """
+        try:
+            return self.filter(default=True)[0]
+        except IndexError:
+            return
+
 
 class Application(TimeStampedModel):
     """
@@ -27,6 +37,7 @@ class Application(TimeStampedModel):
     slug = models.SlugField(max_length=128)
     description = models.TextField(blank=True)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    is_default = models.BooleanField(default=False)
 
     class Meta:
         get_latest_by = ['created']
@@ -82,6 +93,19 @@ class Application(TimeStampedModel):
         """
         return '{}'.format(self.name)
 
+    def save(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        super().save(*args, **kwargs)
+
+        # check if we have set minimum version
+        if self.default:
+            Application.objects.exclude(pk=self.pk).update(default=False)
+
 
 class ReleaseManager(models.Manager):
     """
@@ -97,7 +121,16 @@ class ReleaseManager(models.Manager):
 
         splitted = header.split("@", 1)
         if len(splitted) == 1:
-            raise ValueError("invalid version header")
+            # so there is only version number, try to get default application and search that
+            default_app = Application.objects.get_default()
+
+            if default_app is None:
+                raise ValueError("invalid version header")
+
+            splitted = [
+                default_app.slug,
+                splitted[0],
+            ]
 
         try:
             release = self.get(application__slug=splitted[0], version=splitted[1])
