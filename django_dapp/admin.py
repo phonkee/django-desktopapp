@@ -25,4 +25,11 @@ class ApplicationAdmin(admin.ModelAdmin):
 
 @admin.register(Release)
 class ReleaseAdmin(admin.ModelAdmin):
-    pass
+    readonly_fields = ['author', ]
+    list_select_related = ('application', 'author',)
+    list_display = ('application', 'version', 'author', 'minimum', 'checksum', 'created', 'modified')
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.author = request.user
+        super().save_model(request, obj, form, change)
