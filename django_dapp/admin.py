@@ -25,7 +25,7 @@ class ApplicationAdmin(admin.ModelAdmin):
 
 @admin.register(Release)
 class ReleaseAdmin(admin.ModelAdmin):
-    readonly_fields = ['author', ]
+    readonly_fields = ['author', 'checksum']
     list_select_related = ('application', 'author',)
     list_display = ('application', 'version', 'author', 'minimum', 'checksum', 'created', 'modified')
 

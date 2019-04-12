@@ -28,6 +28,9 @@ class Application(TimeStampedModel):
     description = models.TextField(blank=True)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
+    class Meta:
+        get_latest_by = ['created']
+
     objects = ApplicationManager()
 
     def sorted_releases(self, reverse=False) -> [Release]:
@@ -133,6 +136,9 @@ class Release(TimeStampedModel):
     checksum = models.CharField(max_length=64, blank=True, default="")
     objects = ReleaseManager()
 
+    class Meta:
+        get_latest_by = ['created']
+
     def clean(self):
         """
         clean all fields
@@ -143,7 +149,10 @@ class Release(TimeStampedModel):
         except ValueError as e:
             raise ValidationError({"version", str(e)})
 
-        latest_release = Release.objects.latest()
+        try:
+            latest_release = Release.objects.latest()
+        except Release.DoesNotExist:
+            latest_release = None
 
         if latest_release is not None:
             latest_version_info = latest_release.version_info
