@@ -56,7 +56,7 @@ setup(
         'django_dapp',
     ],
     include_package_data=True,
-    install_requires=["django-model-utils>=2.0", "semver"],
+    install_requires=["django-model-utils>=2.0", "semver", "markdown2", "djangorestframework"],
     license="MIT",
     zip_safe=False,
     keywords='django-desktopapp',
