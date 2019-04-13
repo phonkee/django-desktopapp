@@ -103,8 +103,8 @@ class Application(TimeStampedModel):
         super().save(*args, **kwargs)
 
         # check if we have set minimum version
-        if self.default:
-            Application.objects.exclude(pk=self.pk).update(default=False)
+        if self.is_default:
+            Application.objects.exclude(pk=self.pk).update(is_default=False)
 
 
 class ReleaseManager(models.Manager):
@@ -153,6 +153,7 @@ def release_upload_to(instance, filename):
     :return:
     """
     upload_to = str(apps.get_app_config("django_dapp").UPLOAD_TO).rstrip("/") + "/"
+    upload_to = upload_to.lstrip("/")
     return upload_to + filename
 
 
@@ -165,7 +166,7 @@ class Release(TimeStampedModel):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     release_notes = models.TextField(blank=True)
     build = models.FileField(upload_to=release_upload_to)
-    minimum = models.BooleanField(default=False)
+    minimum = models.BooleanField(default=False, help_text=_('Minimum version that can access webservice.'))
     checksum = models.CharField(max_length=64, blank=True, default="")
     objects = ReleaseManager()
 
@@ -187,7 +188,7 @@ class Release(TimeStampedModel):
         except Release.DoesNotExist:
             latest_release = None
 
-        if latest_release is not None:
+        if latest_release is not None and not self.pk:
             latest_version_info = latest_release.version_info
             if latest_version_info is not None:
                 if latest_version_info >= version_info:

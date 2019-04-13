@@ -1,0 +1,17 @@
+<script>
+  (function ($) {
+    $(document).ready(function () {
+      var editor = CodeMirror.fromTextArea($("#{{ widget.attrs.id }}")[0], {
+        mode: 'markdown',
+        lineNumbers: true,
+        theme: "default",
+        extraKeys: {"Enter": "newlineAndIndentContinueMarkdownList"}
+      });
+    #}
+
+  })
+  })
+  (django.jQuery);
+</script>
+
+{% include 'django/forms/widgets/text.html' %}

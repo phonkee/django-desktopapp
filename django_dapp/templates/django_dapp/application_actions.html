@@ -1,0 +1,5 @@
+{% include "django_dapp/include.html" %}
+
+<a href="{% url "admin:django_dapp_release_add" %}?application={{ application.pk }}" title="Add new release">
+    <i class="fas fa-cloud-upload-alt"></i>
+</a>
