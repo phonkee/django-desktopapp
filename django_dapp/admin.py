@@ -7,6 +7,23 @@ from django.utils.translation import ugettext_lazy as _
 from .models import Application, Release
 
 
+class ReleaseInline(admin.StackedInline):
+    model = Release
+    can_delete = False
+    extra = 0
+
+    fields = ('version', 'author', 'release_notes', 'minimum')
+
+    def get_queryset(self, request):
+        return self.model.objects.order_by("version")
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Application)
 class ApplicationAdmin(admin.ModelAdmin):
     date_hierarchy = "created"
@@ -16,6 +33,8 @@ class ApplicationAdmin(admin.ModelAdmin):
     list_display = (
         'name', 'slug', 'is_default', 'author', 'display__releases_count', 'created', 'modified', 'display__icons')
     list_select_related = ('author',)
+
+    inlines = (ReleaseInline,)
 
     def save_model(self, request, obj, form, change):
         if not change:
@@ -45,6 +64,7 @@ class ReleaseAdmin(admin.ModelAdmin):
     list_select_related = ('application', 'author',)
     list_display = ('__str__', 'application', 'author', 'minimum', 'checksum', 'created', 'modified')
     list_editable = ('minimum',)
+    raw_id_fields = ('application',)
 
     class Media:
         css = {

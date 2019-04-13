@@ -34,10 +34,11 @@ class Application(TimeStampedModel):
     Application
     """
     name = models.CharField(max_length=128)
-    slug = models.SlugField(max_length=128)
+    slug = models.SlugField(max_length=128,
+                            help_text=_("Do not change slug, app may rely on it and could work correctly!"))
     description = models.TextField(blank=True)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-    is_default = models.BooleanField(default=False)
+    is_default = models.BooleanField(default=False, help_text=_('Default application in system'))
 
     class Meta:
         get_latest_by = ['created']
@@ -162,37 +163,43 @@ class Release(TimeStampedModel):
     Release is application release
     """
     application = models.ForeignKey(Application, on_delete=models.PROTECT, related_name="releases")
-    version = models.CharField(max_length=64)
+    version = models.CharField(max_length=64,
+                               help_text=_(
+                                   'Release version using <a href="http://semver.org" target="_blank">semver</a>'))
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-    release_notes = models.TextField(blank=True)
-    build = models.FileField(upload_to=release_upload_to)
+    release_notes = models.TextField(blank=True, help_text=_("Short release notes"))
+    build = models.FileField(upload_to=release_upload_to, help_text=_("Application binary"))
     minimum = models.BooleanField(default=False, help_text=_('Minimum version that can access webservice.'))
-    checksum = models.CharField(max_length=64, blank=True, default="")
+    checksum = models.CharField(max_length=64, blank=True, default="",
+                                help_text=_("SHA256 checksum of application binary"))
     objects = ReleaseManager()
 
     class Meta:
         get_latest_by = ['created']
+        ordering = ['version']
 
     def clean(self):
         """
         clean all fields
         :return:
         """
-        try:
-            version_info = semver.parse_version_info(self.version)
-        except ValueError as e:
-            raise ValidationError({"version", str(e)})
+        if self.version:
+            try:
+                version_info = semver.parse_version_info(self.version)
+            except ValueError as e:
+                raise ValidationError({"version": str(e)})
 
-        try:
-            latest_release = Release.objects.latest()
-        except Release.DoesNotExist:
-            latest_release = None
+            try:
+                latest_release = Release.objects.latest()
+            except Release.DoesNotExist:
+                latest_release = None
 
-        if latest_release is not None and not self.pk:
-            latest_version_info = latest_release.version_info
-            if latest_version_info is not None:
-                if latest_version_info >= version_info:
-                    raise ValidationError({"version": _("please provide later version than in database")})
+            if latest_release is not None and not self.pk:
+                latest_version_info = latest_release.version_info
+                if latest_version_info is not None:
+                    if latest_version_info >= version_info:
+                        raise ValidationError(
+                            {"version": _("version shold be greater than: {}".format(latest_release.version))})
 
         # prepare checksum
         if self.build:
